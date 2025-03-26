@@ -1,0 +1,43 @@
+trigger:
+- main  # Trigger on main branch push
+
+pool:
+  name: 'selfhosted-agent'  # Use your self-hosted agent pool
+
+steps:
+- script: echo "Starting Kaniko build and push to ACR..."
+  displayName: 'Initialize'
+
+- task: Bash@3
+  displayName: 'Build and Push Docker Image using Kaniko'
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Define Variables
+      export ACR_NAME=hardikpoc  # Replace with your ACR name
+      export IMAGE_NAME=kaniko-sample
+      export IMAGE_TAG=latest
+
+      # Get ACR login server
+      export ACR_URL=$(az acr show --name $ACR_NAME --query "loginServer" --output tsv)
+
+      # Authenticate with ACR
+      echo "Logging in to ACR..."
+      az acr login --name $ACR_NAME
+
+      # Create secret for Kaniko (if not already created)
+      kubectl create secret docker-registry acr-secret \
+        --docker-server=$ACR_URL \
+        --docker-username=$(az acr credential show --name $ACR_NAME --query "username" --output tsv) \
+        --docker-password=$(az acr credential show --name $ACR_NAME --query "passwords[0].value" --output tsv) \
+        --namespace selfhosted-agent || echo "Secret already exists"
+
+      # Run Kaniko Build & Push
+      /kaniko/executor \
+        --context=git://github.com/Dhanush1219/kaniko-sample-project.git \
+        --destination=$ACR_URL/$IMAGE_NAME:$IMAGE_TAG \
+        --dockerfile=Dockerfile \
+        --insecure
+
+  env:
+    AZURE_CLI_DISABLE_CONNECTION_VERIFICATION: true
