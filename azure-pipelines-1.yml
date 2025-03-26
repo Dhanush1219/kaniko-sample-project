@@ -51,14 +51,12 @@ stages:
                 - name: kaniko
                   image: gcr.io/kaniko-project/executor:v1.9.1
                   args:
-                    - "--context=dir:///workspace/context"
-                    - "--dockerfile=/workspace/context/Dockerfile"
+                    - "--context=git://github.com/Dhanush1219/kaniko-sample-project.git"
                     - "--destination=$(ACR_NAME).azurecr.io/$(IMAGE_NAME):$(IMAGE_TAG)"
+                    - "--verbosity=debug"
                   volumeMounts:
                   - name: kaniko-secret
                     mountPath: /kaniko/.docker
-                  - name: local-volume
-                    mountPath: /workspace
                 restartPolicy: Never
                 volumes:
                 - name: kaniko-secret
@@ -67,8 +65,7 @@ stages:
                     items:
                       - key: .dockerconfigjson
                         path: config.json
-                - name: local-volume
-                  emptyDir: {}
+
 
     # - task: Kubernetes@1
     #   displayName: "Monitor Kaniko Job"
