@@ -70,20 +70,20 @@ stages:
                 - name: local-volume
                   emptyDir: {}
 
-    - task: Kubernetes@1
-      displayName: "Monitor Kaniko Job"
-      inputs:
-        connectionType: "Kubernetes Service Connection"
-        kubernetesServiceEndpoint: "kaniko-test"  # Ensured consistency
-        namespace: "$(NAMESPACE)"
-        command: "logs"
-        arguments: "job/kaniko-build"
+    # - task: Kubernetes@1
+    #   displayName: "Monitor Kaniko Job"
+    #   inputs:
+    #     connectionType: "Kubernetes Service Connection"
+    #     kubernetesServiceEndpoint: "kaniko-test"  # Ensured consistency
+    #     namespace: "$(NAMESPACE)"
+    #     command: "logs"
+    #     arguments: "job/kaniko-build"
 
-    - task: Kubernetes@1
-      displayName: "Cleanup Kaniko Job"
-      inputs:
-        connectionType: "Kubernetes Service Connection"
-        kubernetesServiceEndpoint: "kaniko-test"  # Ensured consistency
-        namespace: "$(NAMESPACE)"
-        command: "delete"
-        arguments: "job kaniko-build"
+    # - task: Kubernetes@1
+    #   displayName: "Cleanup Kaniko Job"
+    #   inputs:
+    #     connectionType: "Kubernetes Service Connection"
+    #     kubernetesServiceEndpoint: "kaniko-test"  # Ensured consistency
+    #     namespace: "$(NAMESPACE)"
+    #     command: "delete"
+    #     arguments: "job kaniko-build"
