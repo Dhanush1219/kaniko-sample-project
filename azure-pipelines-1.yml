@@ -2,9 +2,10 @@ trigger:
 - main
 
 pool:
-  name: test  # Change this to your self-hosted agent pool name
+  name: test  # Ensure this matches your self-hosted agent pool name
 
 variables:
+  SYSTEM_DEBUG: true  # Enables detailed logs
   ACR_NAME: "hardikpoc"  # Change to your Azure Container Registry name
   IMAGE_NAME: "test-image"
   IMAGE_TAG: "v1"
@@ -18,10 +19,19 @@ stages:
     displayName: Build and Push using Kaniko
     steps:
     - task: Kubernetes@1
-      displayName: Apply Kaniko Job Manifest
+      displayName: "Test K8s Service Connection"
       inputs:
         connectionType: "Kubernetes Service Connection"
-        kubernetesServiceEndpoint: "kaniko-test"  # Change this to your Kubernetes service connection
+        kubernetesServiceEndpoint: "kaniko-test"  # Ensure this is the correct name
+        namespace: "$(NAMESPACE)"
+        command: "get"
+        arguments: "pods"
+
+    - task: Kubernetes@1
+      displayName: "Apply Kaniko Job Manifest"
+      inputs:
+        connectionType: "Kubernetes Service Connection"
+        kubernetesServiceEndpoint: "kaniko-test"  # Ensure this matches
         namespace: "$(NAMESPACE)"
         command: "apply"
         useConfigurationFile: true
@@ -60,19 +70,19 @@ stages:
                   emptyDir: {}
 
     - task: Kubernetes@1
-      displayName: Monitor Kaniko Job
+      displayName: "Monitor Kaniko Job"
       inputs:
         connectionType: "Kubernetes Service Connection"
-        kubernetesServiceEndpoint: "Your-K8s-Service-Connection"
+        kubernetesServiceEndpoint: "kaniko-test"  # Ensured consistency
         namespace: "$(NAMESPACE)"
         command: "logs"
         arguments: "job/kaniko-build"
 
     - task: Kubernetes@1
-      displayName: Cleanup Kaniko Job
+      displayName: "Cleanup Kaniko Job"
       inputs:
         connectionType: "Kubernetes Service Connection"
-        kubernetesServiceEndpoint: "Your-K8s-Service-Connection"
+        kubernetesServiceEndpoint: "kaniko-test"  # Ensured consistency
         namespace: "$(NAMESPACE)"
         command: "delete"
         arguments: "job kaniko-build"
