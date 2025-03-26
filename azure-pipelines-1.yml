@@ -21,7 +21,7 @@ stages:
       displayName: Apply Kaniko Job Manifest
       inputs:
         connectionType: "Kubernetes Service Connection"
-        kubernetesServiceEndpoint: "test123"  # Change this to your Kubernetes service connection
+        kubernetesServiceEndpoint: "my-azure-connection"  # Change this to your Kubernetes service connection
         namespace: "$(NAMESPACE)"
         command: "apply"
         useConfigurationFile: true
