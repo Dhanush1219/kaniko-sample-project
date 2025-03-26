@@ -52,6 +52,7 @@ stages:
                   image: gcr.io/kaniko-project/executor:v1.9.1
                   args:
                     - "--context=dir:///workspace/context"
+                    - "--dockerfile=/workspace/context/Dockerfile"
                     - "--destination=$(ACR_NAME).azurecr.io/$(IMAGE_NAME):$(IMAGE_TAG)"
                   volumeMounts:
                   - name: kaniko-secret
