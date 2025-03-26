@@ -1,0 +1,21 @@
+trigger:
+- main
+
+pool:
+  vmImage: test  # Use a Microsoft-hosted agent
+
+stages:
+- stage: TestConnection
+  displayName: Test Kubernetes Service Connection
+  jobs:
+  - job: CheckConnection
+    displayName: Verify Kubernetes Connection
+    steps:
+    - task: Kubernetes@1
+      displayName: "Check Kubernetes Namespace"
+      inputs:
+        connectionType: "Kubernetes Service Connection"
+        kubernetesServiceEndpoint: "kaniko-test"  # Replace with your actual service connection name
+        namespace: "default"
+        command: "get"
+        arguments: "pods"
