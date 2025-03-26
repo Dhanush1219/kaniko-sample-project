@@ -1,0 +1,78 @@
+trigger:
+- main
+
+pool:
+  name: Self-Hosted-Agent-Pool  # Change this to your self-hosted agent pool name
+
+variables:
+  ACR_NAME: "youracrname"  # Change to your Azure Container Registry name
+  IMAGE_NAME: "test-image"
+  IMAGE_TAG: "v1"
+  NAMESPACE: "azure-devops"
+
+stages:
+- stage: Build
+  displayName: Build and Push Image
+  jobs:
+  - job: BuildAndPush
+    displayName: Build and Push using Kaniko
+    steps:
+    - task: Kubernetes@1
+      displayName: Apply Kaniko Job Manifest
+      inputs:
+        connectionType: "Kubernetes Service Connection"
+        kubernetesServiceEndpoint: "Your-K8s-Service-Connection"  # Change this to your Kubernetes service connection
+        namespace: "$(NAMESPACE)"
+        command: "apply"
+        useConfigurationFile: true
+        configurationType: "inline"
+        inline: |
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: kaniko-build
+            namespace: $(NAMESPACE)
+          spec:
+            backoffLimit: 1
+            ttlSecondsAfterFinished: 300
+            template:
+              spec:
+                containers:
+                - name: kaniko
+                  image: gcr.io/kaniko-project/executor:v1.9.1
+                  args:
+                    - "--context=dir:///workspace/context"
+                    - "--destination=$(ACR_NAME).azurecr.io/$(IMAGE_NAME):$(IMAGE_TAG)"
+                  volumeMounts:
+                  - name: kaniko-secret
+                    mountPath: /kaniko/.docker
+                  - name: local-volume
+                    mountPath: /workspace
+                restartPolicy: Never
+                volumes:
+                - name: kaniko-secret
+                  secret:
+                    secretName: registrysecret
+                    items:
+                      - key: dockerconfigjson
+                        path: config.json
+                - name: local-volume
+                  emptyDir: {}
+
+    - task: Kubernetes@1
+      displayName: Monitor Kaniko Job
+      inputs:
+        connectionType: "Kubernetes Service Connection"
+        kubernetesServiceEndpoint: "Your-K8s-Service-Connection"
+        namespace: "$(NAMESPACE)"
+        command: "logs"
+        arguments: "job/kaniko-build"
+
+    - task: Kubernetes@1
+      displayName: Cleanup Kaniko Job
+      inputs:
+        connectionType: "Kubernetes Service Connection"
+        kubernetesServiceEndpoint: "Your-K8s-Service-Connection"
+        namespace: "$(NAMESPACE)"
+        command: "delete"
+        arguments: "job kaniko-build"
