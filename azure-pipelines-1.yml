@@ -64,7 +64,7 @@ stages:
                   secret:
                     secretName: registrysecret
                     items:
-                      - key: dockerconfigjson
+                      - key: .dockerconfigjson
                         path: config.json
                 - name: local-volume
                   emptyDir: {}
