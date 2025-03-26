@@ -2,11 +2,41 @@ trigger:
 - main  # Trigger on main branch push
 
 pool:
-  name: 'selfhosted-agent'  # Use your self-hosted agent pool
+  name: 'Default'  # Use your self-hosted agent pool
 
 steps:
 - script: echo "Starting Kaniko build and push to ACR..."
   displayName: 'Initialize'
+
+- task: AzureCLI@2
+  displayName: 'Azure Login'
+  inputs:
+    azureSubscription: 'my-azure-connection'  # Replace with your Azure service connection
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      echo "Logging into Azure..."
+      az account show
+
+- task: Bash@3
+  displayName: 'Set Up ACR Authentication'
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Define Variables
+      ACR_NAME=hardikpoc  # Replace with your ACR name
+      IMAGE_NAME=kaniko-sample
+      IMAGE_TAG=latest
+
+      # Get ACR login server
+      ACR_URL=$(az acr show --name $ACR_NAME --query "loginServer" --output tsv)
+
+      # Create a Kubernetes secret for ACR authentication
+      kubectl create secret docker-registry acr-secret \
+        --docker-server=$ACR_URL \
+        --docker-username=$(az acr credential show --name $ACR_NAME --query "username" --output tsv) \
+        --docker-password=$(az acr credential show --name $ACR_NAME --query "passwords[0].value" --output tsv) \
+        --namespace selfhosted-agent || echo "Secret already exists"
 
 - task: Bash@3
   displayName: 'Build and Push Docker Image using Kaniko'
@@ -14,23 +44,12 @@ steps:
     targetType: 'inline'
     script: |
       # Define Variables
-      export ACR_NAME=hardikpoc  # Replace with your ACR name
-      export IMAGE_NAME=kaniko-sample
-      export IMAGE_TAG=latest
+      ACR_NAME=hardikpoc  # Replace with your ACR name
+      IMAGE_NAME=kaniko-sample
+      IMAGE_TAG=latest
 
       # Get ACR login server
-      export ACR_URL=$(az acr show --name $ACR_NAME --query "loginServer" --output tsv)
-
-      # Authenticate with ACR
-      echo "Logging in to ACR..."
-      az acr login --name $ACR_NAME
-
-      # Create secret for Kaniko (if not already created)
-      kubectl create secret docker-registry acr-secret \
-        --docker-server=$ACR_URL \
-        --docker-username=$(az acr credential show --name $ACR_NAME --query "username" --output tsv) \
-        --docker-password=$(az acr credential show --name $ACR_NAME --query "passwords[0].value" --output tsv) \
-        --namespace selfhosted-agent || echo "Secret already exists"
+      ACR_URL=$(az acr show --name $ACR_NAME --query "loginServer" --output tsv)
 
       # Run Kaniko Build & Push
       /kaniko/executor \
@@ -38,6 +57,3 @@ steps:
         --destination=$ACR_URL/$IMAGE_NAME:$IMAGE_TAG \
         --dockerfile=Dockerfile \
         --insecure
-
-  env:
-    AZURE_CLI_DISABLE_CONNECTION_VERIFICATION: true
