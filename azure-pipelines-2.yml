@@ -1,5 +1,5 @@
 trigger:
-- main
+
 
 pool:
   name: Self-Hosted-Agent-Pool  # Change this to your self-hosted agent pool name
