@@ -1,0 +1,67 @@
+trigger:
+- main
+
+pool:
+  name: test  # Ensure this matches your self-hosted agent pool name
+
+variables:
+  SYSTEM_DEBUG: true  # Enables detailed logs
+  ACR_NAME: "hardikpoc"  # Change to your Azure Container Registry name
+  IMAGE_NAME: "test-image"
+  IMAGE_TAG: "v2"
+  NAMESPACE: "azure-devops"
+
+stages:
+- stage: Build
+  displayName: Build and Push Image
+  jobs:
+  - job: BuildAndPush
+    displayName: Build and Push using Kaniko
+    steps:
+    - task: Kubernetes@1
+      displayName: "Test K8s Service Connection"
+      inputs:
+        connectionType: "Kubernetes Service Connection"
+        kubernetesServiceEndpoint: "kaniko-test"  # Ensure this is the correct name
+        namespace: "$(NAMESPACE)"
+        command: "get"
+        arguments: "pods"
+
+    - task: Kubernetes@1
+      displayName: "Apply Kaniko Job Manifest"
+      inputs:
+        connectionType: "Kubernetes Service Connection"
+        kubernetesServiceEndpoint: "kaniko-test"  # Ensure this matches
+        namespace: "$(NAMESPACE)"
+        command: "apply"
+        useConfigurationFile: true
+        configurationType: "inline"
+        inline: |
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: kaniko-build
+            namespace: $(NAMESPACE)
+          spec:
+            backoffLimit: 1
+            ttlSecondsAfterFinished: 300
+            template:
+              spec:
+                containers:
+                - name: kaniko
+                  image: gcr.io/kaniko-project/executor:v1.9.1
+                  args:
+                    - "--context=git://github.com/Dhanush1219/kaniko-sample-project.git"
+                    - "--destination=$(ACR_NAME).azurecr.io/$(IMAGE_NAME):$(IMAGE_TAG)"
+                    - "--verbosity=debug"
+                  volumeMounts:
+                  - name: kaniko-secret
+                    mountPath: /kaniko/.docker
+                restartPolicy: Never
+                volumes:
+                - name: kaniko-secret
+                  secret:
+                    secretName: registrysecret
+                    items:
+                      - key: .dockerconfigjson
+                        path: config.json
