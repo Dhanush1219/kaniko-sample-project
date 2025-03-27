@@ -61,7 +61,7 @@ stages:
                 volumes:
                 - name: kaniko-secret
                   secret:
-                    secretName: registrysecret
+                    secretName: registrysecret1
                     items:
                       - key: .dockerconfigjson
                         path: config.json
