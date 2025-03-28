@@ -2,7 +2,7 @@ trigger:
 - main
 
 pool:
-  name: test  # Self-hosted agent pool
+  name: keda-selfhosted-agent-pool  # Self-hosted agent pool
 
 
 stages:
