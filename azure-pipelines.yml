@@ -2,11 +2,11 @@ trigger:
 - main
 
 pool:
-  name: keda-selfhosted-agent-pool  # Ensure this matches your self-hosted agent pool name
+  name: keda-selfhosted-agent-pool  
 
 variables:
   SYSTEM_DEBUG: true  
-  ACR_NAME: "hardikpoc"  # Your Azure Container Registry name
+  ACR_NAME: "hardikpoc"
   IMAGE_NAME: "test-image"
   IMAGE_TAG: "v3"
   NAMESPACE: "azure-devops"
@@ -22,7 +22,7 @@ stages:
       displayName: "Test K8s Service Connection"
       inputs:
         connectionType: "Kubernetes Service Connection"
-        kubernetesServiceEndpoint: "kaniko-test"  # Ensure this is the correct name
+        kubernetesServiceEndpoint: "kaniko-test"
         namespace: "$(NAMESPACE)"
         command: "get"
         arguments: "pods"
@@ -31,7 +31,7 @@ stages:
       displayName: "Apply Kaniko Job Manifest"
       inputs:
         connectionType: "Kubernetes Service Connection"
-        kubernetesServiceEndpoint: "kaniko-test"  # Ensure this matches
+        kubernetesServiceEndpoint: "kaniko-test"
         namespace: "$(NAMESPACE)"
         command: "apply"
         useConfigurationFile: true
@@ -47,7 +47,7 @@ stages:
             ttlSecondsAfterFinished: 300
             template:
               spec:
-                serviceAccountName: kaniko-serviceaccount  # Use a service account if needed
+                serviceAccountName: kaniko-serviceaccount  # Use the new Service Account
                 containers:
                 - name: kaniko
                   image: gcr.io/kaniko-project/executor:v1.9.1
@@ -63,7 +63,7 @@ stages:
                 volumes:
                 - name: acr-secret
                   secret:
-                    secretName: kanikopushacr  # This now matches your ACR service connection
+                    secretName: kanikopushacr
                     items:
                       - key: .dockerconfigjson
                         path: config.json
